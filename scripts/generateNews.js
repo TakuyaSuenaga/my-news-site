@@ -1,63 +1,71 @@
-import fetch from "node-fetch";
 import fs from "fs";
+import fetch from "node-fetch";
 
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
-const REDDIT_URL = "https://www.reddit.com/r/worldnews/hot.json?limit=3";
 
-async function fetchRedditComments() {
-  const res = await fetch(REDDIT_URL, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; AI-NewsBot/1.0; +https://github.com/takuyasuenaga)"
-    }
-  });
+async function fetchHackerNewsTopStories(limit = 10) {
+  console.log("📡 Fetching top stories from Hacker News...");
+  const topIdsRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json");
+  const ids = await topIdsRes.json();
 
-  const text = await res.text();
-  if (text.startsWith("<") || text.includes("<html")) {
-    console.error("❌ Reddit APIがHTMLを返しました。Bot制限の可能性があります。");
-    return [];
-  }
+  const stories = await Promise.all(
+    ids.slice(0, limit).map(async (id) => {
+      const storyRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+      const story = await storyRes.json();
+      return story;
+    })
+  );
 
-  const json = JSON.parse(text);
-  const posts = json.data.children.map(p => ({
-    title: p.data.title,
-    url: `https://www.reddit.com${p.data.permalink}`,
-  }));
-
-  return posts;
+  return stories.filter((s) => s && s.title && s.url);
 }
-async function generateArticle() {
-  const posts = await fetchRedditComments();
-  const prompt = `
-あなたは国際ニュース編集者です。
-次の記事タイトルに関するReddit上のコメントを、自然な日本語で翻訳し、
-代表的な意見を3つ抽出してMarkdown記事を作成してください。
-見出し、要約、コメント引用を含めてください。
 
-記事タイトル:
-${posts.map(p => `- ${p.title} (${p.url})`).join("\n")}
-`;
-
+async function translateWithClaude(text) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": CLAUDE_API_KEY,
-      "content-type": "application/json",
       "anthropic-version": "2023-06-01",
+      "content-type": "application/json"
     },
     body: JSON.stringify({
-      model: "claude-3.5-sonnet",
-      max_tokens: 2000,
-      messages: [{ role: "user", content: prompt }],
-    }),
+      model: "claude-3-haiku-20240307",
+      max_tokens: 1024,
+      messages: [
+        {
+          role: "user",
+          content: `次の英文ニュースタイトルと概要を日本語に翻訳し、短く要約してください:\n\n${text}`
+        }
+      ]
+    })
   });
 
   const data = await res.json();
-  const markdown = data.content[0].text;
-
-  const date = new Date().toISOString().split("T")[0];
-  const filename = `content/${date}.md`;
-  fs.writeFileSync(filename, markdown);
-  console.log(`✅ Generated article: ${filename}`);
+  if (!data.content || !data.content[0]) {
+    console.error("⚠️ Claude APIの応答が無効:", data);
+    return "翻訳エラー";
+  }
+  return data.content[0].text.trim();
 }
 
-generateArticle();
+async function generateArticle() {
+  const stories = await fetchHackerNewsTopStories(10);
+
+  let markdown = `# 🌍 Hacker News Top 10 (翻訳版)\n\n`;
+  markdown += `更新日時: ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}\n\n`;
+
+  for (const story of stories) {
+    const content = `${story.title}\n${story.url}`;
+    const translation = await translateWithClaude(content);
+
+    markdown += `## [${story.title}](${story.url})\n`;
+    markdown += `📰 翻訳・要約:\n${translation}\n\n`;
+  }
+
+  fs.writeFileSync("public/news.md", markdown);
+  console.log("✅ news.md generated successfully!");
+}
+
+generateArticle().catch((e) => {
+  console.error("❌ Error generating article:", e);
+  process.exit(1);
+});
