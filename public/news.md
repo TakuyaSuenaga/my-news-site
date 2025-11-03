@@ -1,44 +1,44 @@
 # 🌍 Hacker News Top 10 (翻訳版)
 
-更新日時: 2025/11/3 23:01:29
+更新日時: 2025/11/3 23:39:10
 
 ## [Google Suspended My Company's Google Cloud Account for the Third Time](https://www.agwa.name/blog/post/google_suspended_sslmates_cloud_account_again)
 📰 翻訳・要約:
-翻訳エラー
+翻訳エラー (APIエラー)
 
 ## [VimGraph](https://resources.wolframcloud.com/FunctionRepository/resources/VimGraph/)
 📰 翻訳・要約:
-翻訳エラー
-
-## [Offline Math: Converting LaTeX to SVG with MathJax](https://sigwait.org/~alex/blog/2025/10/07/3t8acq.html)
-📰 翻訳・要約:
-翻訳エラー
-
-## [Tiny electric motor can produce more than 1,000 horsepower](https://supercarblondie.com/electric-motor-yasa-more-powerful-tesla-mercedes/)
-📰 翻訳・要約:
-翻訳エラー
+翻訳エラー (APIエラー)
 
 ## [Why Nextcloud feels slow to use](https://ounapuu.ee/posts/2025/11/03/nextcloud-slow/)
 📰 翻訳・要約:
-翻訳エラー
+翻訳エラー (APIエラー)
+
+## [The Problem with Farmed Seafood](https://nautil.us/the-problem-with-farmed-seafood-1243674/)
+📰 翻訳・要約:
+翻訳エラー (APIエラー)
+
+## [Offline Math: Converting LaTeX to SVG with MathJax](https://sigwait.org/~alex/blog/2025/10/07/3t8acq.html)
+📰 翻訳・要約:
+翻訳エラー (APIエラー)
 
 ## [WebAssembly (WASM) arch support for the Linux kernel](https://github.com/joelseverin/linux-wasm)
 📰 翻訳・要約:
-翻訳エラー
+翻訳エラー (APIエラー)
 
-## [KaTeX – The fastest math typesetting library for the web](https://katex.org/)
+## [Tiny electric motor can produce more than 1,000 horsepower](https://supercarblondie.com/electric-motor-yasa-more-powerful-tesla-mercedes/)
 📰 翻訳・要約:
-翻訳エラー
+翻訳エラー (APIエラー)
 
 ## [The Case Against PGVector](https://alex-jacobs.com/posts/the-case-against-pgvector/)
 📰 翻訳・要約:
-翻訳エラー
+翻訳エラー (APIエラー)
 
-## [Oxy is Cloudflare's Rust-based next generation proxy framework (2023)](https://blog.cloudflare.com/introducing-oxy/)
+## [Show HN: a Rust ray tracer that runs on any GPU – even in the browser](https://github.com/tchauffi/rust-rasterizer)
 📰 翻訳・要約:
-翻訳エラー
+翻訳エラー (APIエラー)
 
-## [A Turn Lane in Rhododendron](https://www.greentape.pub/p/a-turn-lane-in-rhododendron)
+## [KaTeX – The fastest math typesetting library for the web](https://katex.org/)
 📰 翻訳・要約:
-翻訳エラー
+翻訳エラー (APIエラー)
 
