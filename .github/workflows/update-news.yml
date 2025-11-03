@@ -5,6 +5,9 @@ on:
     - cron: "0 3 * * *"  # JST12:00ごろ（UTC03:00）
   workflow_dispatch:
 
+permissions:
+  contents: write   # ←★ これを追加！（重要）
+
 jobs:
   build:
     runs-on: ubuntu-latest
