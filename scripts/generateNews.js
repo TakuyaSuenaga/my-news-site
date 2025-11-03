@@ -1,5 +1,4 @@
 import fs from "fs";
-import fetch from "node-fetch";
 
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 
@@ -20,31 +19,47 @@ async function fetchHackerNewsTopStories(limit = 10) {
 }
 
 async function translateWithClaude(text) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": CLAUDE_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "claude-3-haiku-20240307",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: `次の英文ニュースタイトルと概要を日本語に翻訳し、短く要約してください:\n\n${text}`
-        }
-      ]
-    })
-  });
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": CLAUDE_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        messages: [
+          {
+            role: "user",
+            content: `次の英文ニュースタイトルと概要を日本語に翻訳し、短く要約してください:\n\n${text}`
+          }
+        ]
+      })
+    });
 
-  const data = await res.json();
-  if (!data.content || !data.content[0]) {
-    console.error("⚠️ Claude APIの応答が無効:", data);
-    return "翻訳エラー";
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("❌ Claude API error:", res.status, data);
+      return "翻訳エラー (APIエラー)";
+    }
+
+    // 安全に翻訳結果を取得
+    if (data.content && data.content[0] && data.content[0].text) {
+      return data.content[0].text.trim();
+    } else if (data.completion) {
+      return data.completion.trim();
+    } else {
+      console.warn("⚠️ Claude APIの応答形式が不明:", JSON.stringify(data, null, 2));
+      return "翻訳エラー (応答不明)";
+    }
+
+  } catch (err) {
+    console.error("❌ Claude API request failed:", err);
+    return "翻訳エラー (通信失敗)";
   }
-  return data.content[0].text.trim();
 }
 
 async function generateArticle() {
@@ -53,13 +68,15 @@ async function generateArticle() {
   let markdown = `# 🌍 Hacker News Top 10 (翻訳版)\n\n`;
   markdown += `更新日時: ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}\n\n`;
 
-  for (const story of stories) {
-    const content = `${story.title}\n${story.url}`;
-    const translation = await translateWithClaude(content);
+  // 並列で翻訳
+  const translations = await Promise.all(
+    stories.map((story) => translateWithClaude(`${story.title}\n${story.url}`))
+  );
 
+  stories.forEach((story, i) => {
     markdown += `## [${story.title}](${story.url})\n`;
-    markdown += `📰 翻訳・要約:\n${translation}\n\n`;
-  }
+    markdown += `📰 翻訳・要約:\n${translations[i]}\n\n`;
+  });
 
   fs.writeFileSync("public/news.md", markdown);
   console.log("✅ news.md generated successfully!");
