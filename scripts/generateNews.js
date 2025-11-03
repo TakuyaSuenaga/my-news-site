@@ -5,15 +5,26 @@ const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 const REDDIT_URL = "https://www.reddit.com/r/worldnews/hot.json?limit=3";
 
 async function fetchRedditComments() {
-  const res = await fetch(REDDIT_URL);
-  const json = await res.json();
+  const res = await fetch(REDDIT_URL, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; AI-NewsBot/1.0; +https://github.com/takuyasuenaga)"
+    }
+  });
+
+  const text = await res.text();
+  if (text.startsWith("<") || text.includes("<html")) {
+    console.error("❌ Reddit APIがHTMLを返しました。Bot制限の可能性があります。");
+    return [];
+  }
+
+  const json = JSON.parse(text);
   const posts = json.data.children.map(p => ({
     title: p.data.title,
     url: `https://www.reddit.com${p.data.permalink}`,
   }));
+
   return posts;
 }
-
 async function generateArticle() {
   const posts = await fetchRedditComments();
   const prompt = `
