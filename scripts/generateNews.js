@@ -1,21 +1,45 @@
 import fs from "fs";
+import path from "path";
 
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 
-async function fetchHackerNewsTopStories(limit = 10) {
+async function checkUrlAccessible(url) {
+  try {
+    const response = await fetch(url, {
+      method: "HEAD",
+      redirect: "follow",
+      signal: AbortSignal.timeout(5000),
+    });
+    return response.ok;
+  } catch (error) {
+    console.log(`⚠️ URL not accessible: ${url}`);
+    return false;
+  }
+}
+
+async function fetchHackerNewsTopStories(limit = 20) {
   console.log("📡 Fetching top stories from Hacker News...");
   const topIdsRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json");
   const ids = await topIdsRes.json();
 
-  const stories = await Promise.all(
-    ids.slice(0, limit).map(async (id) => {
-      const storyRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
-      const story = await storyRes.json();
-      return story;
-    })
-  );
+  const stories = [];
+  for (const id of ids.slice(0, 50)) {
+    if (stories.length >= limit) break;
 
-  return stories.filter((s) => s && s.title && s.url);
+    const storyRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+    const story = await storyRes.json();
+
+    if (!story || !story.title || !story.url) continue;
+
+    // URLがアクセス可能かチェック
+    const isAccessible = await checkUrlAccessible(story.url);
+    if (isAccessible) {
+      stories.push(story);
+    }
+  }
+
+  console.log(`✅ Found ${stories.length} accessible stories`);
+  return stories;
 }
 
 async function translateWithClaude(text) {
@@ -62,11 +86,41 @@ async function translateWithClaude(text) {
   }
 }
 
-async function generateArticle() {
-  const stories = await fetchHackerNewsTopStories(10);
+function updateIndex(articlesDir) {
+  const files = fs.readdirSync(articlesDir)
+    .filter(f => f.endsWith(".md"))
+    .sort()
+    .reverse();
 
-  let markdown = `# 🌍 Hacker News Top 10 (翻訳版)\n\n`;
-  markdown += `更新日時: ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}\n\n`;
+  const indexData = {
+    articles: files.map(f => ({
+      date: f.replace(".md", ""),
+      path: `/articles/${f}`
+    }))
+  };
+
+  fs.writeFileSync(
+    path.join(articlesDir, "index.json"),
+    JSON.stringify(indexData, null, 2)
+  );
+  console.log("✅ Index updated");
+}
+
+async function generateArticle() {
+  const stories = await fetchHackerNewsTopStories(20);
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).replace(/\//g, "-");
+
+  const timestamp = now.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+
+  let markdown = `# 🌍 Hacker News Top 20 (翻訳版)\n\n`;
+  markdown += `更新日時: ${timestamp}\n\n`;
 
   // 並列で翻訳
   const translations = await Promise.all(
@@ -78,8 +132,18 @@ async function generateArticle() {
     markdown += `📰 翻訳・要約:\n${translations[i]}\n\n`;
   });
 
-  fs.writeFileSync("public/news.md", markdown);
-  console.log("✅ news.md generated successfully!");
+  // public/articles ディレクトリに日付別に保存
+  const articlesDir = path.join(process.cwd(), "public", "articles");
+  if (!fs.existsSync(articlesDir)) {
+    fs.mkdirSync(articlesDir, { recursive: true });
+  }
+
+  const filePath = path.join(articlesDir, `${dateStr}.md`);
+  fs.writeFileSync(filePath, markdown);
+  console.log(`✅ Article saved: ${dateStr}.md`);
+
+  // インデックスファイルを更新（記事一覧用）
+  updateIndex(articlesDir);
 }
 
 generateArticle().catch((e) => {

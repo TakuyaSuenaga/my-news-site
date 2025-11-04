@@ -1,0 +1,26 @@
+.article-content h1 {
+  color: #333;
+  border-bottom: 3px solid #ff6600;
+  padding-bottom: 10px;
+}
+
+.article-content h2 {
+  color: #444;
+  margin-top: 30px;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.article-content a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.article-content a:hover {
+  text-decoration: underline;
+}
+
+.article-content p {
+  line-height: 1.6;
+  color: #555;
+}
