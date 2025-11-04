@@ -1,15 +1,20 @@
-name: Update News
+name: Deploy to GitHub Pages
 
 on:
   schedule:
-    - cron: "0 3 * * *"  # JST12:00ごろ（UTC03:00）
+    - cron: "0 3 * * *"  # JST 12:00 (UTC 03:00)
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
-  contents: write   # ←★ これを追加！（重要）
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  build:
+  generate-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -20,15 +25,30 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install deps
-        run: npm install node-fetch
+      - name: Install dependencies
+        run: npm install
 
       - name: Generate news
         env:
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
         run: node scripts/generateNews.js
 
-      - name: Commit and push
+      - name: Build Next.js site
+        run: npm run build
+
+      - name: Add .nojekyll
+        run: touch out/.nojekyll
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Commit news.md
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
