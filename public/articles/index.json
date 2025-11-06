@@ -1,6 +1,10 @@
 {
   "articles": [
     {
+      "date": "2025-11-06",
+      "path": "/articles/2025-11-06.md"
+    },
+    {
       "date": "2025-11-05",
       "path": "/articles/2025-11-05.md"
     },
